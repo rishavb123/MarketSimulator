@@ -1,6 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+class UniversalTicker:
+
+    def __init__(self):
+        self.tick_count = 0
+
+    def tick(self):
+        self.tick_count += 1
+
+    @classmethod
+    def get_instance(cls):
+        if not hasattr(cls, "instance"):
+            cls.instance = UniversalTicker()
+        return cls.instance
+
 class NoiseGenerator:
 
     def __init__(self, order=0, max_change=0, initial_values=[], allow_negatives=True) -> None:
