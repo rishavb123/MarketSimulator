@@ -54,6 +54,18 @@ class CombineNoise:
         return sum(noise_generator.tick() for noise_generator in self.noise_generators)
 
 def create_price_generator(initial_value, volatility, bias=0):
+    """Creates a price generator with 0th, first, and second order noise. The bias is applied in the 
+    in the first order noise. A bias of 1 corresponds to around a 1.5 times increase over a 24 * 30 * 12
+    tick time span (around a year if each tick is an hour).
+
+    Args:
+        initial_value (float): The initial price.
+        volatility (float): The volatility of the price.
+        bias (int, optional): The bias in the first order noise. Defaults to 0.
+
+    Returns:
+        CombineNoise: A noise generator that combines 0th, first, and second order noise using the parameters.
+    """
     return CombineNoise(
         NoiseGenerator(
             order=0,
@@ -64,7 +76,7 @@ def create_price_generator(initial_value, volatility, bias=0):
         NoiseGenerator(
             order=1,
             max_change=10 * volatility / 100,
-            bias=bias / 200,
+            bias=bias / 150,
             initial_values=[],
             allow_negatives=True,
         ),
@@ -77,10 +89,27 @@ def create_price_generator(initial_value, volatility, bias=0):
     )
 
 if __name__ == "__main__":
-    noise_gen = create_price_generator(100, 10, bias=1)
 
-    xs = range(24 * 30 * 12)
-    ys = np.array([noise_gen.tick() for _ in xs])
+    num_runs = 100
+    num_ticks = 24 * 30 * 12
 
-    plt.plot(xs, ys)
+    xs = range(num_ticks)
+    sum_ys = np.zeros((num_ticks, ))
+
+    for i in range(num_runs):
+        noise_gen = create_price_generator(100, 10, bias=1)
+        ys = np.array([noise_gen.tick() for _ in xs])
+
+        sum_ys += ys
+
+        plt.plot(xs, ys, c="black")
+
+    average_run = sum_ys / num_runs
+
+    print(average_run[-1] / average_run[0])
+
+    plt.plot(xs, average_run, label="Average Run", c="red")
+
+    plt.legend()
+
     plt.show()
