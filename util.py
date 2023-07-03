@@ -17,9 +17,10 @@ class UniversalTicker:
 
 class NoiseGenerator:
 
-    def __init__(self, order=0, max_change=0, initial_values=[], allow_negatives=True) -> None:
+    def __init__(self, order=0, max_change=0, bias=0, initial_values=[], allow_negatives=True) -> None:
         self.order = order
         self.max_change = max_change
+        self.bias = bias
         self.noise_values = np.zeros((self.order + 1), dtype=np.float)
         self.initial_values = initial_values
         self.allow_negatives = allow_negatives
@@ -33,7 +34,7 @@ class NoiseGenerator:
         return self.noise_values[0]
     
     def tick(self):
-        self.noise_values[-1] = 2 * self.max_change * np.random.random() - self.max_change
+        self.noise_values[-1] = 2 * self.max_change * np.random.random() - self.max_change + self.bias
         for i in range(len(self.noise_values) - 2, -1, -1):
             self.noise_values[i] += self.noise_values[i + 1]
         if not self.allow_negatives and self.get_value() < 0:
@@ -52,7 +53,7 @@ class CombineNoise:
     def tick(self):
         return sum(noise_generator.tick() for noise_generator in self.noise_generators)
 
-def create_price_generator(initial_value, volatility):
+def create_price_generator(initial_value, volatility, bias=0):
     return CombineNoise(
         NoiseGenerator(
             order=0,
@@ -63,6 +64,7 @@ def create_price_generator(initial_value, volatility):
         NoiseGenerator(
             order=1,
             max_change=10 * volatility / 100,
+            bias=bias / 200,
             initial_values=[],
             allow_negatives=True,
         ),
@@ -75,7 +77,7 @@ def create_price_generator(initial_value, volatility):
     )
 
 if __name__ == "__main__":
-    noise_gen = create_price_generator(11000, 10)
+    noise_gen = create_price_generator(100, 10, bias=1)
 
     xs = range(24 * 30 * 12)
     ys = np.array([noise_gen.tick() for _ in xs])
