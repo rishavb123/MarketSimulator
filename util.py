@@ -56,7 +56,7 @@ class CombineNoise:
 def create_price_generator(initial_value, volatility, bias=0):
     """Creates a price generator with 0th, first, and second order noise. The bias is applied in the 
     in the first order noise. A bias of 1 corresponds to around a 1.5 times increase over a 24 * 30 * 12
-    tick time span (around a year if each tick is an hour).
+    tick time span on average (around a year if each tick is an hour).
 
     Args:
         initial_value (float): The initial price.
