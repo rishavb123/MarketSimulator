@@ -5,6 +5,7 @@ class UniversalTicker:
 
     def __init__(self):
         self.tick_count = 0
+        self.shared_data = {}
 
     def tick(self):
         self.tick_count += 1
@@ -87,6 +88,11 @@ def create_price_generator(initial_value, volatility, bias=0):
             allow_negatives=True,
         ),
     )
+
+def print_header(title, line_length=100):
+    print("-" * line_length)
+    print(" " * ((line_length - len(title)) // 2) + title)
+    print("-" * line_length)
 
 if __name__ == "__main__":
 
