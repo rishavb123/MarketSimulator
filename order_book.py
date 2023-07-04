@@ -6,36 +6,61 @@ class OrderBook:
         self.symbol = symbol
 
     def at(self, price, sender, quantity=1):
-        self.sell_orders[sender] = price, quantity
+        self.sell_orders[sender] = [price, quantity]
 
     def bid(self, price, sender, quantity=1):
-        self.buy_orders[sender] = price, quantity
+        self.buy_orders[sender] = [price, quantity]
+
+    def withdraw_at(self, sender):
+        del self.sell_orders[sender]
+
+    def withdraw_bid(self, sender):
+        del self.buy_orders[sender]
 
     def match_orders(self):
         matched_trades = []
 
-        for buy_sender, (buy_price, buy_quantity) in self.buy_orders.items():
-            for sell_sender, (sell_price, sell_quantity) in self.sell_orders.items():
-                if buy_price >= sell_price: 
-                    trade_quantity = min(buy_quantity, sell_quantity, sell_sender.get_holdings(self.symbol))
-                    matched_trades.append((buy_sender, sell_sender, trade_quantity, sell_price))
-                    buy_quantity -= trade_quantity
-                    sell_quantity -= trade_quantity
-                    buy_sender.update_holdings(self.symbol, trade_quantity)
-                    sell_sender.update_holdings(self.symbol, -trade_quantity)
+        def get_highest_bid():
+            return min(self.buy_orders.keys(), key=lambda sender: self.buy_orders[sender][0])
+    
+        def get_lowest_at():
+            return max(self.sell_orders.keys(), key=lambda sender: self.sell_orders[sender][0])
 
-                    if buy_quantity == 0:
-                        del self.buy_orders[buy_sender]
-                    else:
-                        self.buy_orders[buy_sender] = buy_price, buy_quantity
+        def make_trade(buy_sender, sell_sender, price, quantity):
+            matched_trades.append((buy_sender, sell_sender, price, quantity))
+            self.buy_orders[buy_sender][1] -= quantity
+            if self.buy_orders[buy_sender][1] == 0:
+                del self.buy_orders[buy_sender]
 
-                    if sell_quantity == 0:
-                        del self.sell_orders[sell_sender]
-                    else:
-                        self.sell_orders[sell_sender] = sell_price, sell_quantity
+            self.sell_orders[sell_sender][1] -= quantity
+            if self.sell_orders[sell_sender][1] == 0:
+                del self.sell_orders[sell_sender]
 
-                    if buy_quantity == 0:
-                        break
+            buy_sender.update_holdings(self.symbol, quantity)
+            sell_sender.update_holdings(self.symbol, -quantity)
+
+            buy_sender.add_capital(-price * quantity)
+            sell_sender.add_capital(price * quantity)
+
+        if len(self.buy_orders.keys()) > 0 and len(self.sell_orders.keys()) > 0:
+            highest_bid_sender = get_highest_bid()
+            lowest_at_sender = get_lowest_at()
+
+            while self.buy_orders[highest_bid_sender][0] >= self.sell_orders[lowest_at_sender][0]:
+                price = self.sell_orders[lowest_at_sender][0]
+                quantity = min(
+                    self.buy_orders[highest_bid_sender][1], 
+                    self.sell_orders[lowest_at_sender][1], 
+                    lowest_at_sender.get_holding(self.symbol),
+                    int(highest_bid_sender.get_capital() / price)
+                )
+                make_trade(highest_bid_sender, lowest_at_sender, price, quantity)
+
+                if len(self.buy_orders.keys()) == 0 or len(self.sell_orders.keys()) == 0:
+                    break
+
+                highest_bid_sender = get_highest_bid()
+                lowest_at_sender = get_lowest_at()
 
         return matched_trades
 
