@@ -1,13 +1,17 @@
 import numpy as np
 
 from entity import Entity
-from util import CombineNoise, NoiseGenerator, create_price_generator
+from util import CombineNoise, NoiseGenerator, create_price_generator, UniversalTicker
 
 class Company(Entity):
 
     def __init__(self, symbol, noise_generator):
-        super().__init__()
+        super().__init__(symbol)
         self.symbol = symbol
+        ticker = UniversalTicker.get_instance()
+        if "companies" not in ticker.shared_data:
+            ticker.shared_data["companies"] = {}
+        ticker.shared_data["companies"][self.symbol] = self
         if isinstance(noise_generator, (CombineNoise, NoiseGenerator)):
             self.noise_generator = noise_generator
         else:
