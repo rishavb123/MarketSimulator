@@ -1,3 +1,5 @@
+from util import UniversalTicker, print_header
+
 class Entity:
 
     def __init__(self, name, initial_capital=0):
@@ -22,9 +24,20 @@ class Entity:
         pass
 
     def display_holdings(self):
-        line_length = 100
-        print("-" * line_length)
-        print(" " * ((line_length - (self.name)) // 2) + self.name)
-        print("-" * line_length)
+        print_header(self.name, 100)
+
+        total = 0
+
+        print(f"symbol\t\tquantity\t\tcurrent price\t\tvalue")
+        
         for symbol in self.holdings:
-            print(f"{symbol}\t\t{self.get_holding(symbol)}")
+            price = UniversalTicker.get_instance().shared_data["companies"].get(symbol, None)
+            if price is None:
+                price = 1
+            else:
+                price = price.price_per_share()
+            quantity = self.get_holding(symbol)
+            total += price * quantity
+            print(f"{symbol}\t\t{quantity:0.8f}\t\t{price:0.8f}\t\t{price * quantity:0.8f}")
+
+        print(f"total\t\t{total:0.8f}\t\t{1:0.8f}\t\t{total:0.8f}")
